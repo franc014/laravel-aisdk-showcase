@@ -64,6 +64,18 @@ services:
                 - ping
             retries: 3
             timeout: 5s
+    ollama:
+        image: 'ollama/ollama:latest'
+        container_name: sail-ollama
+        ports:
+            - '11434:11434'
+        volumes:
+            - 'ollama-data:/root/.ollama'
+        environment:
+            - OLLAMA_KEEP_ALIVE=24h
+            - OLLAMA_ORIGINS=*
+        networks:
+            - sail
 networks:
     sail:
         driver: bridge
@@ -71,4 +83,6 @@ volumes:
     sail-pgsql:
         driver: local
     sail-redis:
+        driver: local
+    ollama-data:
         driver: local
