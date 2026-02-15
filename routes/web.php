@@ -1,11 +1,11 @@
 <?php
 
+use App\Ai\Agents\ChatAgent;
+use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Ai\Ai;
 use Laravel\Fortify\Features;
-
-use function Laravel\Ai\agent;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -17,18 +17,20 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/test-ai', function () {
-    try {
-        // Try to generate a simple text response
+Route::get('/chat', function () {
+    return Inertia::render('Chat');
+});
 
-        $response = agent(
-            instructions: 'You are a helpful assistant.',
-        )->prompt('Say "Hello from Laravel AI SDK!"');
+Route::get('/test-agent', function () {
+    try {
+        $agent = new ChatAgent;
+
+        $response = $agent->prompt('When the men arrived the first time to the moon?');
 
         return response()->json([
             'success' => true,
             'message' => 'AI SDK is working!',
-            'response' => $response,
+            'response' => $response->text,
             // 'provider' => config('ai.defaults.provider'),
             'timestamp' => now()->toDateTimeString(),
         ]);
@@ -42,5 +44,7 @@ Route::get('/test-ai', function () {
         ], 500);
     }
 });
+
+Route::post('/api/chat', [ChatController::class, 'chat'])->name('api.chat');
 
 require __DIR__.'/settings.php';
