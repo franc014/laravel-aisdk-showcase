@@ -10,7 +10,6 @@
             <!-- Messages Area -->
             <div class="mb-4 rounded-lg bg-white shadow-sm">
                 <div ref="messagesContainer" class="h-96 overflow-y-auto p-4">
-                    <!-- Messages will go here -->
                     <div
                         v-if="messages.length === 0"
                         class="flex h-full items-center justify-center text-gray-400"
@@ -23,7 +22,7 @@
                         :key="index"
                         class="mb-4"
                     >
-                        <!-- User messages - right side, blue bubble -->
+                        <!-- User messages -->
                         <div
                             v-if="msg.role === 'user'"
                             class="flex justify-end"
@@ -35,12 +34,12 @@
                             </div>
                         </div>
 
-                        <!-- AI messages - left side, gray bubble -->
+                        <!-- AI messages -->
                         <div v-else class="flex justify-start">
                             <div
                                 class="max-w-[80%] rounded-lg bg-gray-200 px-4 py-2"
                             >
-                                <!-- Loading animation while AI is thinking -->
+                                <!-- Loading animation -->
                                 <div
                                     v-if="msg.isLoading"
                                     class="flex space-x-1"
@@ -57,8 +56,7 @@
                                         style="animation-delay: 0.2s"
                                     ></div>
                                 </div>
-
-                                <!-- Actual message text -->
+                                <!-- Message content -->
                                 <div v-else>{{ msg.content }}</div>
                             </div>
                         </div>
@@ -68,7 +66,6 @@
 
             <!-- Input Area -->
             <div class="rounded-lg bg-white p-4 shadow-sm">
-                <!-- Form will go here -->
                 <form @submit.prevent="sendMessage" class="flex space-x-2">
                     <input
                         v-model="newMessage"
@@ -90,35 +87,28 @@
     </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, nextTick } from 'vue';
 
 const messages = ref([]);
-
 const newMessage = ref('');
-
 const isLoading = ref(false);
-
 const messagesContainer = ref(null);
 
 const sendMessage = async () => {
-    // Guard clause: exit if input empty or already loading
     if (!newMessage.value.trim() || isLoading.value) return;
 
-    // Capture the message before clearing input
     const userMessage = newMessage.value.trim();
 
-    // Add user message to conversation (appears immediately on right)
+    // Add user message
     messages.value.push({
         role: 'user',
         content: userMessage,
     });
 
-    // Clear the input field for next message
     newMessage.value = '';
 
-    // Add placeholder for AI response with loading state
-    // Store the index so we can update it later with the actual response
+    // Add loading placeholder for AI response
     const loadingIndex =
         messages.value.push({
             role: 'assistant',
@@ -126,64 +116,103 @@ const sendMessage = async () => {
             isLoading: true,
         }) - 1;
 
-    // Lock the UI to prevent double-sends
     isLoading.value = true;
 
     try {
-        // Wait for Vue to update DOM, then scroll to show new messages
         await nextTick();
         scrollToBottom();
 
-        // Call the backend API
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')
-                    .content,
+        // Use streaming endpoint
+        const response = await fetch(
+            `/api/stream-chat?message=${encodeURIComponent(userMessage)}`,
+            {
+                method: 'GET',
+                headers: {
+                    Accept: 'text/event-stream',
+                },
             },
-            body: JSON.stringify({ message: userMessage }),
-        });
+        );
 
-        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        console.log(data);
+        // Get the reader from the response body stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        // Replace loading placeholder with actual AI response
-        if (data.success) {
-            messages.value[loadingIndex] = {
-                role: 'assistant',
-                content: data.message,
-                isLoading: false,
-            };
-        } else {
-            // Handle API error response
-            messages.value[loadingIndex] = {
-                role: 'assistant',
-                content: 'Error: ' + data.error,
-                isLoading: false,
-            };
+        // Remove loading state once we start receiving data
+        messages.value[loadingIndex].isLoading = false;
+
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) break;
+
+            // Decode the chunk and add to buffer
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete lines from buffer
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+
+                    if (data === '[DONE]') {
+                        // Stream complete
+                        continue;
+                    }
+
+                    try {
+                        const parsed = JSON.parse(data);
+
+                        if (parsed.text) {
+                            // Append new text chunk to message
+                            messages.value[loadingIndex].content += parsed.text;
+                            await nextTick();
+                            scrollToBottom();
+                        }
+                    } catch (e) {
+                        // Not valid JSON, might be plain text
+                        messages.value[loadingIndex].content += data;
+                    }
+                }
+            }
+        }
+
+        // Process any remaining data in buffer
+        if (buffer.startsWith('data: ')) {
+            const data = buffer.slice(6);
+            if (data && data !== '[DONE]') {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.text) {
+                        messages.value[loadingIndex].content += parsed.text;
+                    }
+                } catch (e) {
+                    messages.value[loadingIndex].content += data;
+                }
+            }
         }
     } catch (error) {
-        console.log(error);
-        // Handle network or other errors
+        console.error('Stream error:', error);
         messages.value[loadingIndex] = {
             role: 'assistant',
-            content: 'Error: Failed to send message',
+            content: 'Error: Failed to get response from AI',
             isLoading: false,
         };
     } finally {
-        // Always unlock the UI when done (success or error)
         isLoading.value = false;
         await nextTick();
         scrollToBottom();
     }
 };
 
-// Auto-scroll to show the newest messages
 const scrollToBottom = () => {
     if (messagesContainer.value) {
-        // Set scroll position to the total height of content (bottom)
         messagesContainer.value.scrollTop =
             messagesContainer.value.scrollHeight;
     }

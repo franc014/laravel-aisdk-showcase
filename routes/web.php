@@ -2,7 +2,11 @@
 
 use App\Ai\Agents\ChatAgent;
 use App\Http\Controllers\ChatController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Inertia\Inertia;
 use Laravel\Ai\Ai;
 use Laravel\Fortify\Features;
@@ -44,6 +48,15 @@ Route::get('/test-agent', function () {
         ], 500);
     }
 });
+
+// Streaming route must NOT use session/cookie middleware that buffers responses
+Route::get('/api/stream-chat', [ChatController::class, 'streamChat'])
+    ->withoutMiddleware([
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        ValidateCsrfToken::class,
+    ]);
 
 Route::post('/api/chat', [ChatController::class, 'chat'])->name('api.chat');
 

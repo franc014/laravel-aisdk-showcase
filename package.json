@@ -31,8 +31,10 @@
         "vue-tsc": "^2.2.4"
     },
     "dependencies": {
+        "@ai-sdk/vue": "^3.0.91",
         "@inertiajs/vue3": "^2.3.7",
         "@vueuse/core": "^12.8.2",
+        "ai": "^6.0.91",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "laravel-vite-plugin": "^2.0.0",
