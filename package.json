@@ -33,6 +33,7 @@
     "dependencies": {
         "@ai-sdk/vue": "^3.0.91",
         "@inertiajs/vue3": "^2.3.7",
+        "@laravel/stream-vue": "^0.3.13",
         "@vueuse/core": "^12.8.2",
         "ai": "^6.0.91",
         "class-variance-authority": "^0.7.1",

@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\ChatAgent;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\StreamPage;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Session\Middleware\StartSession;
@@ -59,5 +60,9 @@ Route::get('/api/stream-chat', [ChatController::class, 'streamChat'])
     ]);
 
 Route::post('/api/chat', [ChatController::class, 'chat'])->name('api.chat');
+
+Route::get('/stream-page', [StreamPage::class, 'show'])->name('stream-page.show');
+
+Route::post('/stream', [StreamPage::class, 'stream'])->name('stream-page.post')->withoutMiddleware(ValidateCsrfToken::class);
 
 require __DIR__.'/settings.php';
