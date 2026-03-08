@@ -15,8 +15,11 @@ class StreamPage extends Controller
     {
         $message = request('message', 'Hello, this is a streamed response!');
 
+        sleep(2); // Simulate some processing delay...
+
         return response()->stream(function (): void {
-            foreach (['developer', 'admin'] as $string) {
+            foreach (['developer', 'admin', 'user'] as $string) {
+                ray($string);
                 echo $string;
                 ob_flush();
                 flush();

@@ -51,15 +51,19 @@ Route::get('/test-agent', function () {
 });
 
 // Streaming route must NOT use session/cookie middleware that buffers responses
-Route::get('/api/stream-chat', [ChatController::class, 'streamChat'])
-    ->withoutMiddleware([
-        AddQueuedCookiesToResponse::class,
-        StartSession::class,
-        ShareErrorsFromSession::class,
-        ValidateCsrfToken::class,
-    ]);
+Route::get('/api/stream-chat', [ChatController::class, 'streamChat']);
+/* ->withoutMiddleware([
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    ValidateCsrfToken::class,
+]); */
 
 Route::post('/api/chat', [ChatController::class, 'chat'])->name('api.chat');
+
+Route::post('/api/chat-with-memory', [ChatController::class, 'chatWithMemory'])
+    ->name('api.chat-with-memory')
+    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
 Route::get('/stream-page', [StreamPage::class, 'show'])->name('stream-page.show');
 

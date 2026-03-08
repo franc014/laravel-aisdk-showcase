@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Contracts\HasTools;
@@ -11,7 +12,7 @@ use Stringable;
 
 class ChatAgent implements Agent, Conversational, HasTools
 {
-    use Promptable;
+    use Promptable, RemembersConversations;
 
     /**
      * Get the instructions that the agent should follow.
@@ -21,14 +22,6 @@ class ChatAgent implements Agent, Conversational, HasTools
         return 'You are a helpful, friendly AI assistant. '.
                 'Answer questions concisely and accurately. '.
                 'If you do not know something, say so honestly.';
-    }
-
-    /**
-     * Get the list of messages comprising the conversation so far.
-     */
-    public function messages(): iterable
-    {
-        return [];
     }
 
     /**

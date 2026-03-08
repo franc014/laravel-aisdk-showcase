@@ -6,8 +6,10 @@
     "guidelines": true,
     "herd_mcp": true,
     "mcp": true,
+    "nightwatch_mcp": false,
     "packages": [
-        "laravel/fortify"
+        "laravel/ai",
+        "spatie/laravel-ray"
     ],
     "sail": false,
     "skills": [
@@ -15,6 +17,7 @@
         "pest-testing",
         "inertia-vue-development",
         "tailwindcss-development",
-        "developing-with-fortify"
+        "developing-with-ai-sdk",
+        "debugging-output-and-previewing-html-using-ray"
     ]
 }
